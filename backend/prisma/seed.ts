@@ -1,31 +1,93 @@
-import { PrismaClient, Role, CustomerStatus, CustomerType } from "@prisma/client";
+import {
+  PrismaClient,
+  Role,
+  CustomerStatus,
+  CustomerType,
+} from "@prisma/client";
+
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  const passwordHash = await bcrypt.hash("Password123!", 10);
+  // =====================================================
+  // DEFAULT PASSWORD
+  // =====================================================
+
+  const passwordHash = await bcrypt.hash(
+    "Password123!",
+    10
+  );
+
+  // =====================================================
+  // USERS
+  // =====================================================
 
   const users = [
-    ["Admin User", "admin@example.com", Role.ADMIN],
-    ["Sales User", "sales@example.com", Role.SALES],
-    ["Warehouse User", "warehouse@example.com", Role.WAREHOUSE],
-    ["Accounts User", "accounts@example.com", Role.ACCOUNTS]
+    [
+      "Admin User",
+      "admin@example.com",
+      Role.ADMIN,
+    ],
+
+    [
+      "Sales User",
+      "sales@example.com",
+      Role.SALES,
+    ],
+
+    [
+      "Warehouse User",
+      "warehouse@example.com",
+      Role.WAREHOUSE,
+    ],
+
+    [
+      "Accounts User",
+      "accounts@example.com",
+      Role.ACCOUNTS,
+    ],
   ] as const;
 
   for (const [name, email, role] of users) {
     await prisma.user.upsert({
-      where: { email },
-      update: { name, role, passwordHash },
-      create: { name, email, role, passwordHash }
+      where: {
+        email,
+      },
+
+      update: {
+        name,
+        role,
+        passwordHash,
+      },
+
+      create: {
+        name,
+        email,
+        role,
+        passwordHash,
+      },
     });
   }
 
-  const admin = await prisma.user.findUniqueOrThrow({
-    where: { email: "admin@example.com" }
-  });
+  // =====================================================
+  // GET ADMIN
+  // =====================================================
 
-  const customerCount = await prisma.customer.count();
+  const admin =
+    await prisma.user.findUniqueOrThrow({
+      where: {
+        email: "admin@example.com",
+      },
+    });
+
+  // =====================================================
+  // CUSTOMERS
+  // =====================================================
+
+  const customerCount =
+    await prisma.customer.count();
+
   if (customerCount === 0) {
     await prisma.customer.createMany({
       data: [
@@ -38,8 +100,9 @@ async function main() {
           type: CustomerType.WHOLESALE,
           address: "Bengaluru, Karnataka",
           status: CustomerStatus.ACTIVE,
-          createdById: admin.id
+          createdById: admin.id,
         },
+
         {
           name: "Suresh Kumar",
           mobile: "9988776655",
@@ -48,13 +111,19 @@ async function main() {
           type: CustomerType.RETAIL,
           address: "Mysuru, Karnataka",
           status: CustomerStatus.LEAD,
-          createdById: admin.id
-        }
-      ]
+          createdById: admin.id,
+        },
+      ],
     });
   }
 
-  const productCount = await prisma.product.count();
+  // =====================================================
+  // PRODUCTS
+  // =====================================================
+
+  const productCount =
+    await prisma.product.count();
+
   if (productCount === 0) {
     await prisma.product.createMany({
       data: [
@@ -65,8 +134,9 @@ async function main() {
           unitPrice: 12500,
           currentStock: 25,
           minStock: 5,
-          warehouseLocation: "A-01"
+          warehouseLocation: "A-01",
         },
+
         {
           name: "Mechanical Keyboard",
           sku: "KEY-001",
@@ -74,8 +144,9 @@ async function main() {
           unitPrice: 3500,
           currentStock: 8,
           minStock: 10,
-          warehouseLocation: "A-02"
+          warehouseLocation: "A-02",
         },
+
         {
           name: "Wireless Mouse",
           sku: "MOU-001",
@@ -83,16 +154,35 @@ async function main() {
           unitPrice: 1200,
           currentStock: 40,
           minStock: 10,
-          warehouseLocation: "A-03"
-        }
-      ]
+          warehouseLocation: "A-03",
+        },
+      ],
     });
   }
 
+  // =====================================================
+  // COMPLETE
+  // =====================================================
+
+  console.log("=================================");
   console.log("Seed complete.");
-  console.log("Password for all seeded users: Password123!");
+  console.log("=================================");
+  console.log("Demo users:");
+  console.log("admin@example.com");
+  console.log("sales@example.com");
+  console.log("warehouse@example.com");
+  console.log("accounts@example.com");
+  console.log("---------------------------------");
+  console.log("Password for all users:");
+  console.log("Password123!");
+  console.log("=================================");
 }
 
 main()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect());
+  .catch((error) => {
+    console.error("Seed failed:", error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -83,7 +83,7 @@ model FollowUp {
   createdAt    DateTime @default(now())
 
   customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
-  createdBy    User     @relation("FollowUpCreatedBy", fields: [createdById], references: [id])
+  createdBy     User     @relation("FollowUpCreatedBy", fields: [createdById], references: [id])
 }
 
 model Product {
@@ -111,8 +111,8 @@ model StockMovement {
   createdById Int
   createdAt   DateTime           @default(now())
 
-  product     Product            @relation(fields: [productId], references: [id], onDelete: Restrict)
-  createdBy   User               @relation(fields: [createdById], references: [id])
+  product     Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+  createdBy   User    @relation(fields: [createdById], references: [id])
 }
 
 model Challan {
@@ -126,8 +126,8 @@ model Challan {
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 
-  customer      Customer      @relation(fields: [customerId], references: [id])
-  createdBy     User          @relation("ChallanCreatedBy", fields: [createdById], references: [id])
+  customer      Customer @relation(fields: [customerId], references: [id])
+  createdBy     User     @relation("ChallanCreatedBy", fields: [createdById], references: [id])
   items         ChallanItem[]
 }
 
@@ -140,6 +140,6 @@ model ChallanItem {
   unitPrice   Decimal
   quantity    Int
 
-  challan     Challan  @relation(fields: [challanId], references: [id], onDelete: Cascade)
-  product     Product  @relation(fields: [productId], references: [id])
+  challan     Challan @relation(fields: [challanId], references: [id], onDelete: Cascade)
+  product     Product @relation(fields: [productId], references: [id])
 }
