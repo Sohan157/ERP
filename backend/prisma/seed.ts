@@ -1,0 +1,98 @@
+import { PrismaClient, Role, CustomerStatus, CustomerType } from "@prisma/client";
+import bcrypt from "bcryptjs";
+
+const prisma = new PrismaClient();
+
+async function main() {
+  const passwordHash = await bcrypt.hash("Password123!", 10);
+
+  const users = [
+    ["Admin User", "admin@example.com", Role.ADMIN],
+    ["Sales User", "sales@example.com", Role.SALES],
+    ["Warehouse User", "warehouse@example.com", Role.WAREHOUSE],
+    ["Accounts User", "accounts@example.com", Role.ACCOUNTS]
+  ] as const;
+
+  for (const [name, email, role] of users) {
+    await prisma.user.upsert({
+      where: { email },
+      update: { name, role, passwordHash },
+      create: { name, email, role, passwordHash }
+    });
+  }
+
+  const admin = await prisma.user.findUniqueOrThrow({
+    where: { email: "admin@example.com" }
+  });
+
+  const customerCount = await prisma.customer.count();
+  if (customerCount === 0) {
+    await prisma.customer.createMany({
+      data: [
+        {
+          name: "Rahul Sharma",
+          mobile: "9876543210",
+          email: "rahul@abctraders.com",
+          businessName: "ABC Traders",
+          gstNumber: "29ABCDE1234F1Z5",
+          type: CustomerType.WHOLESALE,
+          address: "Bengaluru, Karnataka",
+          status: CustomerStatus.ACTIVE,
+          createdById: admin.id
+        },
+        {
+          name: "Suresh Kumar",
+          mobile: "9988776655",
+          email: "suresh@xyzstores.com",
+          businessName: "XYZ Stores",
+          type: CustomerType.RETAIL,
+          address: "Mysuru, Karnataka",
+          status: CustomerStatus.LEAD,
+          createdById: admin.id
+        }
+      ]
+    });
+  }
+
+  const productCount = await prisma.product.count();
+  if (productCount === 0) {
+    await prisma.product.createMany({
+      data: [
+        {
+          name: "27-inch Monitor",
+          sku: "MON-001",
+          category: "Monitors",
+          unitPrice: 12500,
+          currentStock: 25,
+          minStock: 5,
+          warehouseLocation: "A-01"
+        },
+        {
+          name: "Mechanical Keyboard",
+          sku: "KEY-001",
+          category: "Accessories",
+          unitPrice: 3500,
+          currentStock: 8,
+          minStock: 10,
+          warehouseLocation: "A-02"
+        },
+        {
+          name: "Wireless Mouse",
+          sku: "MOU-001",
+          category: "Accessories",
+          unitPrice: 1200,
+          currentStock: 40,
+          minStock: 10,
+          warehouseLocation: "A-03"
+        }
+      ]
+    });
+  }
+
+  console.log("Seed complete.");
+  console.log("Password for all seeded users: Password123!");
+}
+
+main()
+  .catch(console.error)
+  .finally(() => prisma.$disconnect());
