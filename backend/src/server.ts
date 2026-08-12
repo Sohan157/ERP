@@ -1,7 +1,15 @@
 import app from "./app";
+import { seedIfEmpty } from "./utils/seed";
 
 const port = Number(process.env.PORT ?? 5000);
 
-app.listen(port, () => {
-  console.log(`API running on http://localhost:${port}`);
-});
+async function start() {
+  await seedIfEmpty();
+
+  app.listen(port, () => {
+    console.log(`API running on http://localhost:${port}`);
+  });
+}
+
+start();
+
