@@ -155,14 +155,19 @@ async function main() {
   console.log("=================================");
   console.log("Seed complete.");
   console.log("=================================");
+
   console.log("Demo users:");
+
   console.log("admin@example.com");
   console.log("sales@example.com");
   console.log("warehouse@example.com");
   console.log("accounts@example.com");
+
   console.log("---------------------------------");
+
   console.log("Password for all users:");
   console.log("Password123!");
+
   console.log("=================================");
 }
 
