@@ -14,57 +14,51 @@ async function main() {
   // DEFAULT PASSWORD
   // =====================================================
 
-  const passwordHash = await bcrypt.hash(
-    "Password123!",
-    10
-  );
+  const passwordHash = await bcrypt.hash("Password123!", 10);
 
   // =====================================================
   // USERS
   // =====================================================
 
   const users = [
-    [
-      "Admin User",
-      "admin@example.com",
-      Role.ADMIN,
-    ],
+    {
+      name: "Admin User",
+      email: "admin@example.com",
+      role: Role.ADMIN,
+    },
+    {
+      name: "Sales User",
+      email: "sales@example.com",
+      role: Role.SALES,
+    },
+    {
+      name: "Warehouse User",
+      email: "warehouse@example.com",
+      role: Role.WAREHOUSE,
+    },
+    {
+      name: "Accounts User",
+      email: "accounts@example.com",
+      role: Role.ACCOUNTS,
+    },
+  ];
 
-    [
-      "Sales User",
-      "sales@example.com",
-      Role.SALES,
-    ],
-
-    [
-      "Warehouse User",
-      "warehouse@example.com",
-      Role.WAREHOUSE,
-    ],
-
-    [
-      "Accounts User",
-      "accounts@example.com",
-      Role.ACCOUNTS,
-    ],
-  ] as const;
-
-  for (const [name, email, role] of users) {
+  for (const user of users) {
     await prisma.user.upsert({
       where: {
-        email,
+        email: user.email,
       },
 
       update: {
-        name,
-        role,
+        name: user.name,
+        role: user.role,
         passwordHash,
       },
 
       create: {
-        name,
-        email,
-        role,
+        name: user.name,
+        email: user.email,
+        role: user.role,
         passwordHash,
       },
     });
@@ -74,19 +68,17 @@ async function main() {
   // GET ADMIN
   // =====================================================
 
-  const admin =
-    await prisma.user.findUniqueOrThrow({
-      where: {
-        email: "admin@example.com",
-      },
-    });
+  const admin = await prisma.user.findUniqueOrThrow({
+    where: {
+      email: "admin@example.com",
+    },
+  });
 
   // =====================================================
   // CUSTOMERS
   // =====================================================
 
-  const customerCount =
-    await prisma.customer.count();
+  const customerCount = await prisma.customer.count();
 
   if (customerCount === 0) {
     await prisma.customer.createMany({
@@ -102,7 +94,6 @@ async function main() {
           status: CustomerStatus.ACTIVE,
           createdById: admin.id,
         },
-
         {
           name: "Suresh Kumar",
           mobile: "9988776655",
@@ -121,8 +112,7 @@ async function main() {
   // PRODUCTS
   // =====================================================
 
-  const productCount =
-    await prisma.product.count();
+  const productCount = await prisma.product.count();
 
   if (productCount === 0) {
     await prisma.product.createMany({
@@ -136,7 +126,6 @@ async function main() {
           minStock: 5,
           warehouseLocation: "A-01",
         },
-
         {
           name: "Mechanical Keyboard",
           sku: "KEY-001",
@@ -146,7 +135,6 @@ async function main() {
           minStock: 10,
           warehouseLocation: "A-02",
         },
-
         {
           name: "Wireless Mouse",
           sku: "MOU-001",
