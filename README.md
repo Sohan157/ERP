@@ -1,39 +1,24 @@
-4 Mini ERP + CRM Operations Portal
+# Mini ERP + CRM Operations Platform
 
-A full-stack Mini ERP + CRM Operations Portal built for the provided Full Stack Developer Case Study.
+A full-stack wholesale and distribution ERP/CRM application built with **React, TypeScript, Express, Prisma and PostgreSQL**.
 
-## 1. What this project covers
+The project demonstrates production-oriented application design: JWT authentication, role-based access control, CRM workflows, inventory integrity, transaction-safe challan confirmation, REST APIs, validation, pagination and a responsive admin interface.
 
-Mandatory case-study modules:
+## Why this project is interview-ready
 
-- JWT authentication
-- Role-based access: Admin, Sales, Warehouse, Accounts
-- Customer CRM
-- Customer search, detail view and follow-up notes
-- Product management
-- Inventory and stock movement log
-- Sales challans
-- Draft / Confirmed / Cancelled challans
-- Automatic challan numbering
-- Multiple products per challan
-- Product snapshot data inside challan items
-- Stock validation
-- No negative stock
-- Transaction-safe stock reduction
-- REST APIs
-- Validation and HTTP error handling
-- Search, filtering and pagination
-- Responsive React admin UI
-- Environment variables
-- PostgreSQL
-- Prisma ORM
-- Postman collection
-- Local Podman/Docker-compatible database setup
-- Deployment documentation
+- **Authentication:** JWT-based login and protected APIs
+- **Authorization:** Admin, Sales, Warehouse and Accounts roles
+- **CRM:** customers, search, details and follow-up notes
+- **Products:** CRUD, search, categories and SKU validation
+- **Inventory:** stock IN/OUT and movement history
+- **Sales challans:** draft, confirmed and cancelled lifecycle
+- **Data integrity:** stock validation and no-negative-stock rules
+- **Transactions:** atomic inventory updates during challan confirmation
+- **Historical accuracy:** product snapshots are stored on challan items
+- **API quality:** validation, HTTP errors, filtering and pagination
+- **Deployment:** environment-based configuration and deployment documentation
 
-A\S is intentionally not required for the one-day MVP; the case study says AWS is optional and free hosting is acceptable.
-
-## 2. Architecture
+## Architecture
 
 ```text
 React + TypeScript
@@ -42,183 +27,68 @@ React + TypeScript
         v
 Express + TypeScript
         |
-        | Prisma
+        | Prisma ORM
         v
 PostgreSQL
 ```
 
-## 3. Repository structure
+Detailed design decisions are documented in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+## Repository structure
 
 ```text
-mini-erp-crm/
+ERP/
 ├── backend/
 │   ├── prisma/
 │   │   ├── schema.prisma
 │   │   └── seed.ts
-│   ├── src/
-│   │   ├── controllers/
-│   │   ├── middleware/
-│   │   ├── routes/
-│   │   ├── validators/
-│   │   ├── app.ts
-│   │   └── server.ts
-│   ├── .env.example
-│   ├── package.json
-│   └── tsconfig.json
+│   └── src/
+│       ├── controllers/
+│       ├── middleware/
+│       ├── routes/
+│       ├── utils/
+│       ├── validators/
+│       ├── app.ts
+│       └── server.ts
 ├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   ├── context/
-│   │   ├── pages/
-│   │   ├── services/
-│   │   ├── App.tsx
-│   │   ├── main.tsx
-│   │   └── styles.css
-│   ├── .env.example
-│   ├── package.json
-│   ├── tsconfig.json
-│   └── vite.config.ts
-├── postman/
-│   └── Mini-ERP.postman_collection.json
+│   └── src/
+│       ├── components/
+│       ├── context/
+│       ├── pages/
+│       ├── services/
+│       ├── App.tsx
+│       └── main.tsx
 ├── docs/
 │   ├── API.md
+│   ├── ARCHITECTURE.md
 │   ├── ROADMAP.md
 │   └── ONE_DAY_PLAN.md
+├── postman/
 ├── compose.yml
-├── .gitignore
 └── README.md
 ```
 
-## 4. Prerequisites
+## Core business flow: challan confirmation
 
-- Node.js 20+
-- npm
-- PostgreSQL 15+ OR Podman/Docker
-- Git
+Creating a draft challan does **not** change inventory.
 
-## 5. Fast local setup
+When a challan is confirmed:
 
-### A. Start PostgreSQL with Podman
+1. Load the challan items.
+2. Validate current stock for every item.
+3. Reject the operation if any item has insufficient stock.
+4. Execute the stock changes inside a database transaction.
+5. Reduce inventory quantities.
+6. Create an `OUT` stock movement for every item.
+7. Mark the challan as `CONFIRMED`.
 
-```bash
-podman compose up -d postgres
-```
+This prevents negative inventory and avoids partial updates.
 
-If your Podman installation uses `podman-compose`, use:
+### Product snapshots
 
-```bash
-podman-compose up -d postgres
-```
+Challan items retain the product ID, name, SKU, unit price and quantity at the time of the transaction. This keeps historical challans accurate even if the product is edited later.
 
-Or run PostgreSQL locally and use the DATABASE_URL from `.env`.
-
-### B. Backend
-
-```bash
-cd backend
-npm install
-copy .env.example .env
-npx prisma generate
-npx prisma migrate dev --name init
-npm run seed
-npm run dev
-```
-
-Linux/macOS:
-
-```bash
-cp .env.example .env
-```
-
-Backend:
-
-```text
-http://localhost:5000
-```
-
-Health check:
-
-```text
-http://localhost:5000/api/health
-```
-
-### C. Frontend
-
-Open another terminal:
-
-```bash
-cd frontend
-npm install
-copy .env.example .env
-npm run dev
-```
-
-Linux/macOS:
-
-```bash
-cp .env.example .env
-```
-
-Frontend:
-
-```text
-http://localhost:5173
-```
-
-## 6. Seed credentials
-
-All seeded users use:
-
-```text
-Password: Password123!
-```
-
-| Role | Email |
-|---|---|
-| Admin | admin@example.com |
-| Sales | sales@example.com |
-| Warehouse | warehouse@example.com |
-| Accounts | accounts@example.com |
-
-Change these credentials before any real deployment.
-
-## 7. Important business flow
-
-### Draft
-
-Creating a draft challan does NOT change stock.
-
-### Confirm
-
-Confirming a challan:
-
-1. Loads all challan items.
-2. Checks current stock.
-3. Rejects the operation if any item is insufficient.
-4. Uses a database transaction.
-5. Reduces stock.
-6. Creates an OUT stock movement for each item.
-7. Changes challan status to CONFIRMED.
-
-This prevents negative stock and prevents partial updates.
-
-### Snapshot
-
-Challan items save:
-
-- product ID
-- product name
-- SKU
-- unit price
-- quantity
-
-Therefore, old challans remain historically accurate if the product changes later.
-
-## 8. API
-
-See `docs/API.md` and the Postman collection.
-
-Main endpoints:
+## API surface
 
 ```text
 POST /api/auth/login
@@ -249,9 +119,84 @@ POST   /api/challans/:id/cancel
 GET    /api/dashboard
 ```
 
-## 9. Environment variables
+See [`docs/API.md`](docs/API.md) and the Postman collection for request details.
 
-### Backend
+## Local setup
+
+### Prerequisites
+
+- Node.js 20+
+- npm
+- PostgreSQL 15+ or Podman/Docker
+- Git
+
+### 1. Start PostgreSQL
+
+```bash
+podman compose up -d postgres
+```
+
+Or use a local PostgreSQL installation and configure `DATABASE_URL`.
+
+### 2. Backend
+
+```bash
+cd backend
+npm install
+copy .env.example .env
+npx prisma generate
+npx prisma migrate dev --name init
+npm run seed
+npm run dev
+```
+
+Linux/macOS:
+
+```bash
+cp .env.example .env
+```
+
+API: `http://localhost:5000`
+
+Health check: `http://localhost:5000/api/health`
+
+### 3. Frontend
+
+```bash
+cd frontend
+npm install
+copy .env.example .env
+npm run dev
+```
+
+Linux/macOS:
+
+```bash
+cp .env.example .env
+```
+
+Frontend: `http://localhost:5173`
+
+## Seed credentials
+
+All seeded users use:
+
+```text
+Password: Password123!
+```
+
+| Role | Email |
+|---|---|
+| Admin | admin@example.com |
+| Sales | sales@example.com |
+| Warehouse | warehouse@example.com |
+| Accounts | accounts@example.com |
+
+These credentials are for local/demo use only. Change them before any real deployment.
+
+## Environment variables
+
+Backend:
 
 ```env
 DATABASE_URL=postgresql://erp_user:erp_password@localhost:5432/mini_erp?schema=public
@@ -260,15 +205,15 @@ PORT=5000
 FRONTEND_URL=http://localhost:5173
 ```
 
-### Frontend
+Frontend:
 
 ```env
 VITE_API_URL=http://localhost:5000/api
 ```
 
-Never commit real `.env` files.
+Never commit real `.env` files or production secrets.
 
-## 10. Testing checklist
+## Testing checklist
 
 ### Authentication
 
@@ -279,41 +224,36 @@ Never commit real `.env` files.
 
 ### Customers
 
-- [ ] Create
-- [ ] Edit
-- [ ] Search
-- [ ] Pagination
-- [ ] Detail
-- [ ] Follow-up
+- [ ] Create and edit
+- [ ] Search and pagination
+- [ ] Detail view
+- [ ] Follow-up creation
 
 ### Products
 
-- [ ] Create
-- [ ] Edit
+- [ ] Create and edit
 - [ ] Search
 - [ ] Duplicate SKU rejected
 
 ### Inventory
 
-- [ ] Stock IN
-- [ ] Stock OUT
+- [ ] Stock IN/OUT
 - [ ] Movement log
 - [ ] Low-stock indicator
 - [ ] No negative stock
 
 ### Challans
 
-- [ ] Create draft
-- [ ] Draft does not reduce stock
-- [ ] Confirm reduces stock
-- [ ] Insufficient stock returns error
+- [ ] Draft creation does not reduce stock
+- [ ] Confirmation reduces stock
+- [ ] Insufficient stock is rejected
 - [ ] Failed confirmation leaves stock unchanged
-- [ ] Product snapshot is saved
+- [ ] Product snapshot is stored
 - [ ] Cancelled challan cannot be confirmed
 
-## 11. Deployment
+## Deployment
 
-Recommended one-day deployment:
+Recommended deployment architecture:
 
 ```text
 Frontend  -> Vercel
@@ -321,74 +261,33 @@ Backend   -> Render
 Database  -> Neon / Render PostgreSQL / Supabase
 ```
 
-### Backend deployment
+For backend deployment, configure `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_URL` and `PORT`, then run Prisma migrations before starting the server.
 
-Set:
+For frontend deployment, configure `VITE_API_URL` to point to the deployed backend.
 
-```text
-DATABASE_URL
-JWT_SECRET
-FRONTEND_URL
-PORT
-```
+## Engineering roadmap
 
-Build:
+The current project intentionally focuses on the core ERP/CRM workflow. Future production hardening can include:
 
-```bash
-npm run build
-```
-
-Start:
-
-```bash
-npm start
-```
-
-Before starting the server on the platform:
-
-```bash
-npx prisma migrate deploy
-```
-
-### Frontend deployment
-
-Set:
-
-```text
-VITE_API_URL=https://YOUR-BACKEND/api
-```
-
-Build:
-
-```bash
-npm run build
-```
-
-Publish the generated `dist` folder using the platform's standard Vite settings.
-
-## 12. Production hardening after the case study
-
-Not required for the one-day submission:
-
-- Refresh tokens
-- HTTP-only cookie auth
+- Automated unit/integration tests
+- CI/CD with GitHub Actions
+- Refresh-token or HTTP-only cookie authentication
 - Rate limiting
 - Audit logging
-- Automated tests
-- CI/CD
-- Docker image publishing
-- S3
-- PDF invoice/challan export
+- PDF challan/invoice export
 - Advanced analytics
-- AWS infrastructure
 - Monitoring and observability
 
-## 13. Known MVP limitations
+## Interview discussion points
 
-- Authentication is intentionally simple JWT auth for the assignment.
-- No password reset flow.
-- No email/SMS notifications.
-- No invoice/PDF module because it is a bonus.
-- No S3 product image upload because it is a bonus.
-- No GitHub Actions because it is a bonus.
-- Dashboard metrics are intentionally lightweight.
+**Q: Why use a database transaction for challan confirmation?**
+
+Because confirmation changes several related records. A transaction ensures the inventory reductions, stock movements and challan status update either all succeed or all roll back.
+
+**Q: How do you prevent negative stock?**
+
+The confirmation flow validates the available quantity before applying the stock reduction and rejects the entire operation when any item is insufficient.
+
+**Q: Why store product snapshots?**
+
+Historical documents should not change when a product's current name, SKU or price changes. The snapshot preserves the values used at transaction time.
